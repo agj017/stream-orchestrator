@@ -1,0 +1,166 @@
+openapi: 3.0.3
+info:
+  title: Stream Orchestrator API
+  version: 0.1.0
+  description: API contract for stream lifecycle orchestration.
+servers:
+  - url: https://api.example.com
+paths:
+  /v1/streams:
+    post:
+      summary: Create stream
+      description: Create a stream request and enqueue orchestration work.
+      operationId: createStream
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: false
+          schema:
+            type: string
+          description: Optional idempotency key for safe retries.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateStreamRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StreamResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: stream_key already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v1/streams/{streamId}:
+    get:
+      summary: Get stream
+      description: Fetch stream status by ID.
+      operationId: getStream
+      parameters:
+        - in: path
+          name: streamId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StreamResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    CreateStreamRequest:
+      type: object
+      required:
+        - stream_key
+        - source_url
+        - protocol
+      properties:
+        stream_key:
+          type: string
+          minLength: 3
+          maxLength: 128
+        source_url:
+          type: string
+          format: uri
+        protocol:
+          type: string
+          enum:
+            - rtsp
+            - rtmp
+            - webrtc
+            - hls
+        region:
+          type: string
+          example: ap-northeast-2
+    StreamResponse:
+      type: object
+      required:
+        - id
+        - stream_key
+        - source_url
+        - protocol
+        - status
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        stream_key:
+          type: string
+        source_url:
+          type: string
+          format: uri
+        protocol:
+          type: string
+        region:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/StreamStatus'
+        failure_reason:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    StreamStatus:
+      type: string
+      enum:
+        - PENDING
+        - PROVISIONING
+        - RUNNING
+        - FAILED
+        - STOPPING
+        - STOPPED
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        request_id:
+          type: string
+
