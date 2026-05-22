@@ -4,6 +4,13 @@ import "time"
 
 const (
 	StreamStatusPending = "PENDING"
+
+	OutboxStatusPending    = "PENDING"
+	OutboxStatusProcessing = "PROCESSING"
+	OutboxStatusPublished  = "PUBLISHED"
+	OutboxStatusFailed     = "FAILED"
+
+	OutboxEventStreamCreated = "STREAM_CREATED"
 )
 
 type Stream struct {
@@ -24,7 +31,10 @@ type OutboxEvent struct {
 	EventType     string
 	Payload       []byte
 	Status        string
+	RetryCount    int
+	AvailableAt   time.Time
+	PublishedAt   *time.Time
+	LastError     string
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 }
-
