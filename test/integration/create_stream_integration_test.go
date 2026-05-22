@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"stream-orchestrator/internal/service"
-	pgstore "stream-orchestrator/internal/store/postgres"
+	pgrepo "stream-orchestrator/internal/repository/postgres"
 	transporthttp "stream-orchestrator/internal/transport/http"
 )
 
@@ -26,13 +26,13 @@ func TestCreateStream_Integration(t *testing.T) {
 	ensureSchema(t, pool)
 	truncateTables(t, pool)
 
-	store, err := pgstore.NewStreamStore(ctx, dbURL)
+	repository, err := pgrepo.NewStreamRepository(ctx, dbURL)
 	if err != nil {
-		t.Fatalf("NewStreamStore: %v", err)
+		t.Fatalf("NewStreamRepository: %v", err)
 	}
-	defer store.Close()
+	defer repository.Close()
 
-	svc := service.NewStreamService(store)
+	svc := service.NewStreamService(repository)
 	handler := transporthttp.NewStreamHandler(svc)
 
 	mux := http.NewServeMux()

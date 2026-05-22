@@ -16,7 +16,7 @@ import (
 	"stream-orchestrator/internal/events/outbox"
 	"stream-orchestrator/internal/events/rabbitmq"
 	"stream-orchestrator/internal/service"
-	pgstore "stream-orchestrator/internal/store/postgres"
+	pgrepo "stream-orchestrator/internal/repository/postgres"
 	transporthttp "stream-orchestrator/internal/transport/http"
 )
 
@@ -57,13 +57,13 @@ func TestCreateStream_E2E_APIToOutboxToRabbit(t *testing.T) {
 		t.Fatalf("queue bind: %v", err)
 	}
 
-	store, err := pgstore.NewStreamStore(context.Background(), dbURL)
+	repository, err := pgrepo.NewStreamRepository(context.Background(), dbURL)
 	if err != nil {
-		t.Fatalf("new stream store: %v", err)
+		t.Fatalf("new stream repository: %v", err)
 	}
-	defer store.Close()
+	defer repository.Close()
 
-	svc := service.NewStreamService(store)
+	svc := service.NewStreamService(repository)
 	handler := transporthttp.NewStreamHandler(svc)
 
 	mux := http.NewServeMux()
@@ -86,7 +86,7 @@ func TestCreateStream_E2E_APIToOutboxToRabbit(t *testing.T) {
 		t.Fatalf("decode response: %v", err)
 	}
 
-	outboxRepo := pgstore.NewOutboxRepository(pool)
+	outboxRepo := pgrepo.NewOutboxRepository(pool)
 	pub, err := rabbitmq.NewPublisher(rabbitURL, exchange, map[string]string{
 		domain.OutboxEventStreamCreated: routingKey,
 	})
@@ -128,4 +128,3 @@ func TestCreateStream_E2E_APIToOutboxToRabbit(t *testing.T) {
 		t.Fatalf("expected outbox status PUBLISHED, got %s", outboxStatus)
 	}
 }
-

@@ -12,7 +12,7 @@ import (
 	"stream-orchestrator/internal/domain"
 	"stream-orchestrator/internal/events/outbox"
 	"stream-orchestrator/internal/events/rabbitmq"
-	pgstore "stream-orchestrator/internal/store/postgres"
+	pgrepo "stream-orchestrator/internal/repository/postgres"
 )
 
 func main() {
@@ -37,7 +37,7 @@ func main() {
 	}
 	defer pub.Close()
 
-	repo := pgstore.NewOutboxRepository(pool)
+	repo := pgrepo.NewOutboxRepository(pool)
 	processor := outbox.NewProcessor(repo, pub, outbox.Config{
 		PollInterval: envDuration("OUTBOX_POLL_INTERVAL", 500*time.Millisecond),
 		BatchSize:    envInt("OUTBOX_BATCH_SIZE", 100),
@@ -91,4 +91,3 @@ func envDuration(key string, fallback time.Duration) time.Duration {
 	}
 	return d
 }
-

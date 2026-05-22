@@ -8,7 +8,7 @@ import (
 
 	"stream-orchestrator/internal/domain"
 	"stream-orchestrator/internal/events/outbox"
-	pgstore "stream-orchestrator/internal/store/postgres"
+	pgrepo "stream-orchestrator/internal/repository/postgres"
 )
 
 type flakyPublisher struct {
@@ -41,7 +41,7 @@ INSERT INTO outbox_events (
 		t.Fatalf("seed outbox event: %v", err)
 	}
 
-	repo := pgstore.NewOutboxRepository(pool)
+	repo := pgrepo.NewOutboxRepository(pool)
 	pub := &flakyPublisher{failCount: 1}
 	processor := outbox.NewProcessor(repo, pub, outbox.Config{BatchSize: 10, PollInterval: time.Second, MaxRetry: 5})
 
@@ -78,4 +78,3 @@ INSERT INTO outbox_events (
 		t.Fatalf("expected retry_count remains 1, got %d", retryCount)
 	}
 }
-

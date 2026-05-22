@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"stream-orchestrator/internal/domain"
-	pgstore "stream-orchestrator/internal/store/postgres"
+	pgrepo "stream-orchestrator/internal/repository/postgres"
 )
 
 func TestOutboxRepository_ClaimAndMark_Integration(t *testing.T) {
@@ -28,7 +28,7 @@ INSERT INTO outbox_events (
 		t.Fatalf("seed outbox_events: %v", err)
 	}
 
-	repo := pgstore.NewOutboxRepository(pool)
+	repo := pgrepo.NewOutboxRepository(pool)
 	events, err := repo.ClaimBatch(context.Background(), 1)
 	if err != nil {
 		t.Fatalf("ClaimBatch: %v", err)
@@ -55,4 +55,3 @@ INSERT INTO outbox_events (
 		t.Fatalf("expected status PUBLISHED, got %s", status)
 	}
 }
-
