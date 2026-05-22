@@ -1,4 +1,4 @@
-package integration
+package e2e
 
 import (
 	"bytes"
@@ -15,22 +15,22 @@ import (
 	"stream-orchestrator/internal/domain"
 	"stream-orchestrator/internal/events/outbox"
 	"stream-orchestrator/internal/events/rabbitmq"
-	"stream-orchestrator/internal/service"
 	pgrepo "stream-orchestrator/internal/repository/postgres"
+	"stream-orchestrator/internal/service"
 	transporthttp "stream-orchestrator/internal/transport/http"
 )
 
 func TestCreateStream_E2E_APIToOutboxToRabbit(t *testing.T) {
-	dbURL := requireTestDB(t)
+	dbURL := requireE2ETestDB(t)
 	rabbitURL := os.Getenv("TEST_RABBITMQ_URL")
 	if rabbitURL == "" {
 		t.Skip("TEST_RABBITMQ_URL is not set")
 	}
 
-	pool := openTestPool(t, dbURL)
+	pool := openE2ETestPool(t, dbURL)
 	defer pool.Close()
-	ensureSchema(t, pool)
-	truncateTables(t, pool)
+	ensureE2ESchema(t, pool)
+	truncateE2ETables(t, pool)
 
 	exchange := "stream.events.e2e"
 	queue := "stream.events.e2e.q"

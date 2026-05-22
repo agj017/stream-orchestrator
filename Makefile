@@ -1,4 +1,4 @@
-.PHONY: run-api run-controller migrate-up migrate-down migrate-version migrate-force db-bootstrap test test-unit test-integration
+.PHONY: run-api run-controller migrate-up migrate-down migrate-version migrate-force db-bootstrap test test-unit test-integration test-e2e
 
 MIGRATE ?= migrate
 MIGRATIONS_PATH ?= migrations
@@ -40,3 +40,9 @@ test-integration:
 	@test -n "$(TEST_DB_URL)" || (echo "TEST_DB_URL is required" && exit 1)
 	@echo "WARNING: integration tests may TRUNCATE tables in TEST_DB_URL=$(TEST_DB_URL)"
 	TEST_DB_URL="$(TEST_DB_URL)" go test ./test/integration -count=1 -v
+
+test-e2e:
+	@test -n "$(TEST_DB_URL)" || (echo "TEST_DB_URL is required" && exit 1)
+	@test -n "$(TEST_RABBITMQ_URL)" || (echo "TEST_RABBITMQ_URL is required" && exit 1)
+	@echo "WARNING: e2e tests may TRUNCATE tables in TEST_DB_URL=$(TEST_DB_URL)"
+	TEST_DB_URL="$(TEST_DB_URL)" TEST_RABBITMQ_URL="$(TEST_RABBITMQ_URL)" go test ./test/e2e -count=1 -v
