@@ -3,7 +3,10 @@ package domain
 import "time"
 
 const (
-	StreamStatusPending = "PENDING"
+	StreamStatusPending      = "PENDING"
+	StreamStatusProvisioning = "PROVISIONING"
+	StreamStatusRunning      = "RUNNING"
+	StreamStatusFailed       = "FAILED"
 
 	OutboxStatusPending    = "PENDING"
 	OutboxStatusProcessing = "PROCESSING"
