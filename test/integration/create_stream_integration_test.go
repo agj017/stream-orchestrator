@@ -6,52 +6,33 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"os"
-	"strings"
 	"testing"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-
 	"stream-orchestrator/internal/service"
-	pgstore "stream-orchestrator/internal/store/postgres"
+	pgrepo "stream-orchestrator/internal/repository/postgres"
 	transporthttp "stream-orchestrator/internal/transport/http"
 )
 
 func TestCreateStream_Integration(t *testing.T) {
-	dbURL := os.Getenv("TEST_DB_URL")
-	if dbURL == "" {
-		t.Skip("TEST_DB_URL is not set")
-	}
+	dbURL := requireTestDB(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	pool, err := pgxpool.New(ctx, dbURL)
-	if err != nil {
-		t.Fatalf("pgxpool.New: %v", err)
-	}
+	pool := openTestPool(t, dbURL)
 	defer pool.Close()
 
-	if err := pool.Ping(ctx); err != nil {
-		t.Fatalf("pool.Ping: %v", err)
-	}
+	ensureSchema(t, pool)
+	truncateTables(t, pool)
 
-	if err := ensureSchema(ctx, pool); err != nil {
-		t.Fatalf("ensureSchema: %v", err)
-	}
-
-	if _, err := pool.Exec(ctx, "TRUNCATE TABLE outbox_events, streams"); err != nil {
-		t.Fatalf("truncate tables: %v", err)
-	}
-
-	store, err := pgstore.NewStreamStore(ctx, dbURL)
+	repository, err := pgrepo.NewStreamRepository(ctx, dbURL)
 	if err != nil {
-		t.Fatalf("NewStreamStore: %v", err)
+		t.Fatalf("NewStreamRepository: %v", err)
 	}
-	defer store.Close()
+	defer repository.Close()
 
-	svc := service.NewStreamService(store)
+	svc := service.NewStreamService(repository)
 	handler := transporthttp.NewStreamHandler(svc)
 
 	mux := http.NewServeMux()
@@ -98,38 +79,3 @@ func TestCreateStream_Integration(t *testing.T) {
 		t.Fatalf("expected 1 outbox event row, got %d", eventCount)
 	}
 }
-
-func ensureSchema(ctx context.Context, pool *pgxpool.Pool) error {
-	sqlBytes, err := os.ReadFile("migrations/0001_init_streams_and_outbox.up.sql")
-	if err != nil {
-		// go test ./... runs package tests from package directories.
-		sqlBytes, err = os.ReadFile("../../migrations/0001_init_streams_and_outbox.up.sql")
-		if err != nil {
-			return err
-		}
-	}
-
-	for _, stmt := range splitSQLStatements(string(sqlBytes)) {
-		if strings.TrimSpace(stmt) == "" {
-			continue
-		}
-		if _, err := pool.Exec(ctx, stmt); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func splitSQLStatements(sql string) []string {
-	parts := strings.Split(sql, ";")
-	out := make([]string, 0, len(parts))
-	for _, p := range parts {
-		s := strings.TrimSpace(p)
-		if s == "" {
-			continue
-		}
-		out = append(out, s)
-	}
-	return out
-}
-

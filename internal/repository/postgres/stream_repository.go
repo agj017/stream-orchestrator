@@ -13,11 +13,11 @@ import (
 
 type txContextKey struct{}
 
-type StreamStore struct {
+type StreamRepository struct {
 	pool *pgxpool.Pool
 }
 
-func NewStreamStore(ctx context.Context, dbURL string) (*StreamStore, error) {
+func NewStreamRepository(ctx context.Context, dbURL string) (*StreamRepository, error) {
 	pool, err := pgxpool.New(ctx, dbURL)
 	if err != nil {
 		return nil, fmt.Errorf("create pgx pool: %w", err)
@@ -28,14 +28,14 @@ func NewStreamStore(ctx context.Context, dbURL string) (*StreamStore, error) {
 		return nil, fmt.Errorf("ping postgres: %w", err)
 	}
 
-	return &StreamStore{pool: pool}, nil
+	return &StreamRepository{pool: pool}, nil
 }
 
-func (s *StreamStore) Close() {
+func (s *StreamRepository) Close() {
 	s.pool.Close()
 }
 
-func (s *StreamStore) WithTx(ctx context.Context, fn func(ctx context.Context) error) error {
+func (s *StreamRepository) WithTx(ctx context.Context, fn func(ctx context.Context) error) error {
 	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)
@@ -52,7 +52,7 @@ func (s *StreamStore) WithTx(ctx context.Context, fn func(ctx context.Context) e
 	return nil
 }
 
-func (s *StreamStore) InsertStream(ctx context.Context, stream domain.Stream) error {
+func (s *StreamRepository) InsertStream(ctx context.Context, stream domain.Stream) error {
 	q := `
 INSERT INTO streams (
 	id, stream_key, source_url, protocol, region, status, created_at, updated_at
@@ -74,7 +74,7 @@ INSERT INTO streams (
 	return nil
 }
 
-func (s *StreamStore) InsertOutboxEvent(ctx context.Context, e domain.OutboxEvent) error {
+func (s *StreamRepository) InsertOutboxEvent(ctx context.Context, e domain.OutboxEvent) error {
 	q := `
 INSERT INTO outbox_events (
 	id, aggregate_type, aggregate_id, event_type, payload, status, created_at, updated_at
@@ -96,7 +96,7 @@ INSERT INTO outbox_events (
 	return nil
 }
 
-func (s *StreamStore) exec(ctx context.Context, q string, args ...any) (pgconn.CommandTag, error) {
+func (s *StreamRepository) exec(ctx context.Context, q string, args ...any) (pgconn.CommandTag, error) {
 	if tx, ok := txFromContext(ctx); ok {
 		return tx.Exec(ctx, q, args...)
 	}

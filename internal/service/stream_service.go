@@ -24,20 +24,20 @@ type CreateStreamInput struct {
 	Region    string
 }
 
-type StreamStore interface {
+type StreamRepository interface {
 	WithTx(ctx context.Context, fn func(ctx context.Context) error) error
 	InsertStream(ctx context.Context, s domain.Stream) error
 	InsertOutboxEvent(ctx context.Context, e domain.OutboxEvent) error
 }
 
 type StreamService struct {
-	store StreamStore
+	repository StreamRepository
 	now   func() time.Time
 }
 
-func NewStreamService(store StreamStore) *StreamService {
+func NewStreamService(repository StreamRepository) *StreamService {
 	return &StreamService{
-		store: store,
+		repository: repository,
 		now:   time.Now().UTC,
 	}
 }
@@ -79,11 +79,11 @@ func (s *StreamService) CreateStream(ctx context.Context, in CreateStreamInput) 
 		UpdatedAt:     now,
 	}
 
-	if err := s.store.WithTx(ctx, func(txCtx context.Context) error {
-		if err := s.store.InsertStream(txCtx, stream); err != nil {
+	if err := s.repository.WithTx(ctx, func(txCtx context.Context) error {
+		if err := s.repository.InsertStream(txCtx, stream); err != nil {
 			return err
 		}
-		if err := s.store.InsertOutboxEvent(txCtx, event); err != nil {
+		if err := s.repository.InsertOutboxEvent(txCtx, event); err != nil {
 			return err
 		}
 		return nil
