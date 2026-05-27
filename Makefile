@@ -1,4 +1,4 @@
-.PHONY: run-api run-controller migrate-up migrate-down migrate-version migrate-force db-bootstrap test test-unit test-integration test-e2e
+.PHONY: run-api run-provisioner migrate-up migrate-down migrate-version migrate-force db-bootstrap test test-unit test-integration test-e2e
 
 MIGRATE ?= migrate
 MIGRATIONS_PATH ?= migrations
@@ -11,8 +11,8 @@ APP_DB_PASSWORD ?= postgres
 run-api:
 	go run ./cmd/orchestrator-api
 
-run-controller:
-	go run ./cmd/orchestrator-controller
+run-provisioner:
+	go run ./cmd/stream-provisioner
 
 migrate-up:
 	$(MIGRATE) -path $(MIGRATIONS_PATH) -database "$(DB_URL)" up

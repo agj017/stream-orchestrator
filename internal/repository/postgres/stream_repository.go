@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"stream-orchestrator/internal/domain"
@@ -10,6 +11,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+var ErrStreamNotFound = errors.New("stream not found")
 
 type txContextKey struct{}
 
@@ -92,6 +95,44 @@ INSERT INTO outbox_events (
 	)
 	if err != nil {
 		return fmt.Errorf("insert outbox event: %w", err)
+	}
+	return nil
+}
+
+func (s *StreamRepository) GetStreamByID(ctx context.Context, id string) (domain.Stream, error) {
+	q := `
+SELECT id, stream_key, source_url, protocol, COALESCE(region, ''), status, created_at, updated_at
+FROM streams
+WHERE id = $1
+`
+	var stream domain.Stream
+	err := s.pool.QueryRow(ctx, q, id).Scan(
+		&stream.ID,
+		&stream.StreamKey,
+		&stream.SourceURL,
+		&stream.Protocol,
+		&stream.Region,
+		&stream.Status,
+		&stream.CreatedAt,
+		&stream.UpdatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.Stream{}, ErrStreamNotFound
+		}
+		return domain.Stream{}, fmt.Errorf("get stream by id: %w", err)
+	}
+	return stream, nil
+}
+
+func (s *StreamRepository) UpdateStreamStatus(ctx context.Context, id string, status string, failureReason *string) error {
+	_, err := s.pool.Exec(ctx, `
+UPDATE streams
+SET status = $1, failure_reason = $2, updated_at = NOW()
+WHERE id = $3
+`, status, failureReason, id)
+	if err != nil {
+		return fmt.Errorf("update stream status: %w", err)
 	}
 	return nil
 }
