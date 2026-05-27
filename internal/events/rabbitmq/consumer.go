@@ -49,7 +49,10 @@ func (c *Consumer) Consume(ctx context.Context, handler Handler) error {
 	if err != nil {
 		return fmt.Errorf("consume: %w", err)
 	}
+	return c.consumeDeliveries(ctx, deliveries, handler)
+}
 
+func (c *Consumer) consumeDeliveries(ctx context.Context, deliveries <-chan amqp.Delivery, handler Handler) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -85,4 +88,3 @@ func (c *Consumer) Close() error {
 	}
 	return retErr
 }
-
