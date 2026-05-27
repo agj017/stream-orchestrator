@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS streams (
     region TEXT,
     status TEXT NOT NULL,
     failure_reason TEXT,
-    assigned_node_id UUID,
+    assigned_instance_id UUID,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -34,4 +34,3 @@ CREATE INDEX IF NOT EXISTS idx_outbox_events_pending
 
 CREATE INDEX IF NOT EXISTS idx_outbox_events_aggregate
     ON outbox_events (aggregate_type, aggregate_id);
-
