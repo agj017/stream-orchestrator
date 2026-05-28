@@ -1,4 +1,4 @@
-.PHONY: run-api run-provisioner migrate-up migrate-down migrate-version migrate-force db-bootstrap test test-unit test-integration test-e2e
+.PHONY: run-api run-provisioner run-instance-reconciler migrate-up migrate-down migrate-version migrate-force db-bootstrap test test-unit test-integration test-e2e
 
 MIGRATE ?= migrate
 MIGRATIONS_PATH ?= migrations
@@ -13,6 +13,9 @@ run-api:
 
 run-provisioner:
 	go run ./cmd/stream-provisioner
+
+run-instance-reconciler:
+	go run ./cmd/instance-reconciler
 
 migrate-up:
 	$(MIGRATE) -path $(MIGRATIONS_PATH) -database "$(DB_URL)" up
